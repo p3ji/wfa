@@ -35,10 +35,10 @@ const STOP_WORDS = new Set([
 ]);
 
 // WFA agent system prompt
-const SYSTEM_PROMPT = `You are a strict, authoritative assistant specializing in the Work Force Adjustment (WFA) process for the Canadian Federal Public Service. Your sole purpose is to provide accurate, factual information regarding WFA policies, directives, and official clarifications based only on the provided context.
+const SYSTEM_PROMPT = `You are a strict, authoritative assistant specializing in the Work Force Adjustment (WFA) process for the Canadian Federal Public Service. Your sole purpose is to provide accurate, factual information regarding WFA policies, directives, and official clarifications based only on the provided sources.
 
 Core Directives:
-1. Strict Context Constraint: Answer queries using ONLY the provided context blocks. Do not assume or extrapolate. If the query is vague/unclear, ask the user for clarification. If the context does not contain the answer, explain what is missing, and suggest 3 related questions/topics covered in the WFA policies that you can answer (e.g., opting options, alternation rules, retraining/education allowance, transition support, or classification equivalencies).
+1. Strict Source Constraint: Answer queries using ONLY the provided policy sources. Do not assume or extrapolate. Never mention terms like "context", "context blocks", "database", or "provided chunks" in your conversations. Instead, refer to "the provided WFA policies", "the official guidelines", or "the sources provided". If the sources do not contain the answer, explain that the provided WFA policies do not contain this information, and suggest 3 related questions/topics covered in the WFA policies that you can answer (e.g., opting options, alternation rules, retraining/education allowance, transition support, or classification equivalencies).
 2. Resolution of Conflict: Prioritize the most recent directive or clarification.
 3. Mandatory Citations: Every factual claim or quote you write MUST be followed by a citation containing the source document URL. Format: ([Source Name]([URL])).
 4. No Personal Speculation: Explain general rules, never make guarantees.
@@ -52,7 +52,6 @@ let selectedModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-2.5-flash';
 
 // DOM Elements
 const docListEl = document.getElementById('docList');
-const btnSettings = document.getElementById('btnSettings');
 const btnToggleContext = document.getElementById('btnToggleContext');
 const btnCloseDrawer = document.getElementById('btnCloseDrawer');
 const contextDrawer = document.getElementById('contextDrawer');
@@ -61,24 +60,11 @@ const chatFeed = document.getElementById('chatFeed');
 const inputForm = document.getElementById('inputForm');
 const queryInput = document.getElementById('queryInput');
 const btnSend = document.getElementById('btnSend');
-const settingsModal = document.getElementById('settingsModal');
-const btnCloseSettings = document.getElementById('btnCloseSettings');
-const btnCancelSettings = document.getElementById('btnCancelSettings');
-const btnSaveSettings = document.getElementById('btnSaveSettings');
-const apiKeyInput = document.getElementById('apiKeyInput');
-const modelSelect = document.getElementById('modelSelect');
-const btnTogglePassword = document.getElementById('btnTogglePassword');
 
 // Initialization
 async function init() {
-  // Load configuration
-  if (apiKey) {
-    apiKeyInput.value = apiKey;
-  }
-  
   // Enable send button by default (the app will use Vercel Serverless Function /api/chat if no local key is set)
   btnSend.removeAttribute('disabled');
-  modelSelect.value = selectedModel;
 
   // Load databases
   try {
@@ -99,12 +85,6 @@ async function init() {
   }
 
   // Setup Event Listeners
-  btnSettings.addEventListener('click', showSettingsModal);
-  btnCloseSettings.addEventListener('click', hideSettingsModal);
-  btnCancelSettings.addEventListener('click', hideSettingsModal);
-  btnSaveSettings.addEventListener('click', saveSettings);
-  btnTogglePassword.addEventListener('click', togglePasswordVisibility);
-  
   btnToggleContext.addEventListener('click', () => contextDrawer.classList.toggle('collapsed'));
   btnCloseDrawer.addEventListener('click', () => contextDrawer.classList.add('collapsed'));
   
@@ -140,40 +120,6 @@ function populateSourceDocuments() {
       </div>
     </li>
   `).join('');
-}
-
-// Password hide/show toggle
-function togglePasswordVisibility() {
-  const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
-  apiKeyInput.setAttribute('type', type);
-  btnTogglePassword.querySelector('i').classList.toggle('fa-eye');
-  btnTogglePassword.querySelector('i').classList.toggle('fa-eye-slash');
-}
-
-// Modal Visibility Helpers
-function showSettingsModal() {
-  settingsModal.classList.add('active');
-}
-
-function hideSettingsModal() {
-  settingsModal.classList.remove('active');
-}
-
-function saveSettings() {
-  const key = apiKeyInput.value.trim();
-  const model = modelSelect.value;
-  
-  if (key) {
-    localStorage.setItem('GEMINI_API_KEY', key);
-    localStorage.setItem('GEMINI_MODEL', model);
-    apiKey = key;
-    selectedModel = model;
-    btnSend.removeAttribute('disabled');
-    hideSettingsModal();
-    appendSystemMessage('Settings Saved', 'API Configuration successfully updated.', 'success');
-  } else {
-    alert('Please enter a valid Gemini API Key.');
-  }
 }
 
 // Textarea auto-resize

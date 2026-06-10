@@ -802,14 +802,31 @@ a:hover {
 
 /* Suggested Question Links in Chat Bubbles */
 .suggested-question-link {
+  display: block;
+  background-color: hsla(215, 90%, 55%, 0.06);
+  border: 1px solid hsla(215, 90%, 55%, 0.15);
   color: var(--primary);
-  text-decoration: underline;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 6px 0;
   cursor: pointer;
   transition: var(--transition);
   font-weight: 500;
+  text-decoration: none;
 }
 
 .suggested-question-link:hover {
+  background-color: hsla(215, 90%, 55%, 0.12);
+  border-color: var(--primary);
   color: var(--primary-hover);
-  opacity: 0.85;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  transform: translateY(-1px);
+}
+
+.message-bubble ul:has(.suggested-question-link),
+.message-bubble ol:has(.suggested-question-link) {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
