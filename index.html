@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WFA Policy Expert Agent</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Vanilla CSS Style -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <i class="fa-solid fa-scale-balanced"></i>
+        </div>
+        <div class="title-container">
+          <h2>WFA Agent</h2>
+          <span class="status-badge"><span class="pulse-dot"></span>Active</span>
+        </div>
+      </div>
+      
+      <div class="sidebar-content">
+        <div class="nav-section">
+          <h3>POLICY KNOWLEDGE BASE</h3>
+          <ul class="doc-list" id="docList">
+            <!-- Dynamically populated doc list -->
+          </ul>
+        </div>
+        
+        <div class="info-card">
+          <h4>Authoritative Source</h4>
+          <p>Answering queries using strictly approved Treasury Board directives & guidelines with full citations.</p>
+        </div>
+      </div>
+      
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary" id="btnSettings">
+          <i class="fa-solid fa-cog"></i> API Settings
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="chat-workspace">
+      <header class="chat-header">
+        <div class="header-info">
+          <h1>WFA Policy Expert Agent</h1>
+          <p>Canadian Federal Public Service Work Force Adjustment Advisor</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-icon-label" id="btnToggleContext" title="View Search Context">
+            <i class="fa-solid fa-database"></i> <span>Search Context</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Chat Feed -->
+      <section class="chat-feed" id="chatFeed">
+        <!-- Welcoming Message -->
+        <div class="message-wrapper assistant">
+          <div class="message-avatar">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="message-bubble">
+            <p>Welcome! I am your <strong>Work Force Adjustment (WFA) Policy Expert Agent</strong>.</p>
+            <p>I can help you navigate rules regarding:</p>
+            <ul>
+              <li>Opting periods and the 120-day consideration window</li>
+              <li>Guarantee of a reasonable job offer (GRJO)</li>
+              <li>Voluntary departure programs and alternation requests</li>
+              <li>Transition Support Measures (TSM) and Retraining / Education allowances</li>
+              <li>Selection of employees for retention or layoff (SERLO) guidelines</li>
+            </ul>
+            <p class="disclaimer"><em>Note: All my answers are strictly generated from approved policy texts and include citations. Please enter your Gemini API Key in settings to start querying.</em></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Input Footer -->
+      <footer class="chat-input-area">
+        <form class="input-form" id="inputForm">
+          <textarea 
+            id="queryInput" 
+            placeholder="Ask a question (e.g., 'How many days do I get to choose WFA options?')" 
+            rows="1"
+            required
+          ></textarea>
+          <button type="submit" class="btn btn-primary" id="btnSend" disabled>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+        <div class="input-disclaimer">
+          Strictly answers using approved documentation. For specific cases, consult your union rep or departmental HR.
+        </div>
+      </footer>
+    </main>
+
+    <!-- Search Context Drawer (Collapsible) -->
+    <aside class="context-drawer" id="contextDrawer">
+      <div class="drawer-header">
+        <h3><i class="fa-solid fa-list-check"></i> Retrieved RAG Context</h3>
+        <button class="btn-close" id="btnCloseDrawer">&times;</button>
+      </div>
+      <div class="drawer-content" id="contextContent">
+        <div class="empty-state">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <p>No queries run yet. Run a query to see the retrieved policy chunks used as context for the agent.</p>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Settings Modal (API Key configuration) -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key"></i> Gemini API Settings</h3>
+        <button class="btn-close" id="btnCloseSettings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>To query the Gemini model, please provide a Gemini API Key. Your key is stored strictly on your local browser (localStorage) and never leaves your computer.</p>
+        
+        <div class="form-group">
+          <label for="apiKeyInput">Gemini API Key</label>
+          <div class="input-password-wrapper">
+            <input type="password" id="apiKeyInput" placeholder="AIzaSy...">
+            <button type="button" class="btn-toggle-password" id="btnTogglePassword">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="modelSelect">Select Model</label>
+          <select id="modelSelect">
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Recommended - Fast & Accurate)</option>
+            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Standard)</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash (Latest)</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Extremely Capable)</option>
+          </select>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="fa-solid fa-info-circle"></i>
+          <span>You can obtain an API key for free from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnCancelSettings">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveSettings">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vanilla JS App Logic -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
