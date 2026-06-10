@@ -799,3 +799,17 @@ a:hover {
 .modal-footer .btn {
   width: auto;
 }
+
+/* Suggested Question Links in Chat Bubbles */
+.suggested-question-link {
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.suggested-question-link:hover {
+  color: var(--primary-hover);
+  opacity: 0.85;
+}

@@ -398,6 +398,12 @@ def main():
     docs = [
         {
             "type": "html",
+            "file": "tsm_scale_details.html",
+            "name": "WFA Directive Annex C - Transition Support Measure (TSM) Scale",
+            "url": "https://www.njc-cnm.gc.ca/directive/d12/v239/en"
+        },
+        {
+            "type": "html",
             "file": "workforce_adjustment.html",
             "name": "Treasury Board Workforce Adjustment Policy Info",
             "url": "https://www.canada.ca/en/government/publicservice/workforce/workforce-adjustment.html"

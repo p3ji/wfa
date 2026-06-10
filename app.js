@@ -1,5 +1,22 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
+// Global function to auto-fill and submit suggested questions
+window.askSuggestedQuestion = function(questionText) {
+  const cleanText = questionText
+    .replace(/^[-\*\d\.\s\?\"\'“‘]+|[”’\"\'\?]+$/g, '')
+    .trim() + '?';
+  const queryInput = document.getElementById('queryInput');
+  if (queryInput) {
+    queryInput.value = cleanText;
+    queryInput.style.height = 'auto';
+    queryInput.style.height = (queryInput.scrollHeight) + 'px';
+  }
+  const inputForm = document.getElementById('inputForm');
+  if (inputForm) {
+    inputForm.requestSubmit();
+  }
+};
+
 // Stop words for search tokenization
 const STOP_WORDS = new Set([
   'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'arent', 'as', 'at',
@@ -105,6 +122,7 @@ async function init() {
 function populateSourceDocuments() {
   const documents = [
     { name: "WFA Directive (NJC)", url: "https://www.njc-cnm.gc.ca/directive/d12/v239/en", type: "Baseline" },
+    { name: "WFA TSM Scale Annex C", url: "https://www.njc-cnm.gc.ca/directive/d12/v239/en", type: "Baseline" },
     { name: "WFA Policy Info (TBS)", url: "https://www.canada.ca/en/government/publicservice/workforce/workforce-adjustment.html", type: "Policy" },
     { name: "PSC Retention/Layoff Guide", url: "https://www.canada.ca/en/public-service-commission/services/public-service-hiring-guides/selection-employees-retention-layoff-guide-managers-hr.html", type: "Guide" },
     { name: "CAPE Member Guide 2025", url: "https://www.acep-cape.ca/sites/default/files/2025-12/WFA2025MemberGuideEN20250530.pdf", type: "Union" },
@@ -523,6 +541,21 @@ function formatMarkdownAndCitations(text) {
   const citationRegex = /\(\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\)/g;
   clean = clean.replace(citationRegex, (match, name, url) => {
     return `<button class="citation-btn" onclick="window.open('${url}', '_blank')"><i class="fa-solid fa-external-link"></i> ${name}</button>`;
+  });
+
+  // Parse standard markdown links [text](url)
+  const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g;
+  clean = clean.replace(linkRegex, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // Identify suggested questions in list items and make them clickable
+  clean = clean.replace(/<li>(.*?)<\/li>/g, (match, content) => {
+    // Strip HTML tags to check if the plain text ends with a question mark
+    const stripped = content.replace(/<[^>]*>/g, '').trim();
+    if (stripped.endsWith('?')) {
+      const safeText = stripped.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      return `<li><span class="suggested-question-link" onclick="window.askSuggestedQuestion('${safeText}')">${content}</span></li>`;
+    }
+    return match;
   });
 
   // Paragraph formatting: convert double line breaks to paragraphs
