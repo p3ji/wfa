@@ -57,10 +57,10 @@ async function init() {
   // Load configuration
   if (apiKey) {
     apiKeyInput.value = apiKey;
-    btnSend.removeAttribute('disabled');
-  } else {
-    showSettingsModal();
   }
+  
+  // Enable send button by default (the app will use Vercel Serverless Function /api/chat if no local key is set)
+  btnSend.removeAttribute('disabled');
   modelSelect.value = selectedModel;
 
   // Load databases
@@ -363,15 +363,41 @@ async function handleQuerySubmit(e) {
 
   // 3. Call Gemini API
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: selectedModel,
-      systemInstruction: SYSTEM_PROMPT,
-    });
+    let answer = "";
+    
+    if (!apiKey) {
+      // Send request to Vercel Serverless Function backend
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: promptContent,
+          model: selectedModel,
+          systemInstruction: SYSTEM_PROMPT
+        })
+      });
+      
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || `HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      answer = data.text;
+    } else {
+      // Direct client-side SDK call
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: selectedModel,
+        systemInstruction: SYSTEM_PROMPT,
+      });
 
-    const result = await model.generateContent(promptContent);
-    const response = await result.response;
-    const answer = response.text();
+      const result = await model.generateContent(promptContent);
+      const response = await result.response;
+      answer = response.text();
+    }
 
     // Remove typing indicator and append answer
     typingIndicator.remove();
