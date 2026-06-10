@@ -1,13 +1,8 @@
-
-
-// Global function to auto-fill and submit suggested questions
-window.askSuggestedQuestion = function(questionText) {
-  const cleanText = questionText
-    .replace(/^[-\*\d\.\s\?\"\'“‘]+|[”’\"\'\?]+$/g, '')
-    .trim() + '?';
+// Submit a suggested question programmatically
+function submitQuestion(questionText) {
   const queryInput = document.getElementById('queryInput');
   if (queryInput) {
-    queryInput.value = cleanText;
+    queryInput.value = questionText.trim();
     queryInput.style.height = 'auto';
     queryInput.style.height = (queryInput.scrollHeight) + 'px';
   }
@@ -15,7 +10,7 @@ window.askSuggestedQuestion = function(questionText) {
   if (inputForm) {
     inputForm.requestSubmit();
   }
-};
+}
 
 // Stop words for search tokenization
 const STOP_WORDS = new Set([
@@ -38,11 +33,12 @@ const STOP_WORDS = new Set([
 const SYSTEM_PROMPT = `You are a strict, authoritative assistant specializing in the Work Force Adjustment (WFA) process for the Canadian Federal Public Service. Your sole purpose is to provide accurate, factual information regarding WFA policies, directives, and official clarifications based only on the provided sources.
 
 Core Directives:
-1. Strict Source Constraint: Answer queries using ONLY the provided policy sources. Do not assume or extrapolate. Never mention terms like "context", "context blocks", "database", or "provided chunks" in your conversations. Instead, refer to "the provided WFA policies", "the official guidelines", or "the sources provided". If the sources do not contain the answer, explain that the provided WFA policies do not contain this information, and suggest 3 related questions/topics covered in the WFA policies that you can answer (e.g., opting options, alternation rules, retraining/education allowance, transition support, or classification equivalencies).
+1. Strict Source Constraint: Answer queries using ONLY the provided policy sources. Do not assume or extrapolate. Never mention terms like "context", "context blocks", "database", or "provided chunks" in your conversations. Instead, refer to "the provided WFA policies", "the official guidelines", or "the sources provided". If the sources do not contain the answer, explain that the provided WFA policies do not contain this information, then suggest 3 related questions that you CAN answer from the WFA policies. IMPORTANT: Each suggested question MUST be phrased as a complete, standalone question ending with a question mark (?). For example: "What are the opting options available under WFA?" — never use topic headings or themes like "Opting Options" alone.
 2. Resolution of Conflict: Prioritize the most recent directive or clarification.
 3. Mandatory Citations: Every factual claim or quote you write MUST be followed by a citation containing the source document URL. Format: ([Source Name]([URL])).
 4. No Personal Speculation: Explain general rules, never make guarantees.
-5. Style and Tone: Objective, formal, neutral. Use lists to break down complex text.`;
+5. Style and Tone: Objective, formal, neutral. Use lists to break down complex text.
+6. Suggested Questions: Whenever you end a response (even a successful one), you may optionally include a "You might also want to know:" section with 2-3 follow-up questions phrased as complete questions ending with "?".`;
 
 // State Variables
 let chunks = [];
@@ -93,6 +89,25 @@ async function init() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       inputForm.requestSubmit();
+    }
+  });
+
+  // Event delegation for suggested question chips (uses data-question attribute)
+  chatFeed.addEventListener('click', (e) => {
+    const chip = e.target.closest('.suggested-question-link');
+    if (chip) {
+      const question = chip.getAttribute('data-question');
+      if (question) submitQuestion(question);
+    }
+  });
+  chatFeed.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const chip = e.target.closest('.suggested-question-link');
+      if (chip) {
+        e.preventDefault();
+        const question = chip.getAttribute('data-question');
+        if (question) submitQuestion(question);
+      }
     }
   });
 }
@@ -477,13 +492,14 @@ function formatMarkdownAndCitations(text) {
   const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g;
   clean = clean.replace(linkRegex, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
-  // Identify suggested questions in list items and make them clickable
+  // Identify suggested questions in list items and make them clickable via data-question attribute
   clean = clean.replace(/<li>(.*?)<\/li>/g, (match, content) => {
     // Strip HTML tags to check if the plain text ends with a question mark
     const stripped = content.replace(/<[^>]*>/g, '').trim();
     if (stripped.endsWith('?')) {
-      const safeText = stripped.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-      return `<li><span class="suggested-question-link" onclick="window.askSuggestedQuestion('${safeText}')">${content}</span></li>`;
+      // Use data attribute to safely pass question text; click handled via event delegation
+      const safeAttr = stripped.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      return `<li><span class="suggested-question-link" data-question="${safeAttr}" role="button" tabindex="0">${content}</span></li>`;
     }
     return match;
   });
