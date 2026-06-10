@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
 
 // Global function to auto-fill and submit suggested questions
 window.askSuggestedQuestion = function(questionText) {
@@ -47,8 +47,7 @@ Core Directives:
 // State Variables
 let chunks = [];
 let wfaEquivalencies = {};
-let apiKey = localStorage.getItem('GEMINI_API_KEY') || '';
-let selectedModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-2.5-flash';
+const selectedModel = 'gemini-2.5-flash';
 
 // DOM Elements
 const docListEl = document.getElementById('docList');
@@ -327,41 +326,26 @@ async function handleQuerySubmit(e) {
 
   // 3. Call Gemini API
   try {
-    let answer = "";
-    
-    if (!apiKey) {
-      // Send request to Vercel Serverless Function backend
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: promptContent,
-          model: selectedModel,
-          systemInstruction: SYSTEM_PROMPT
-        })
-      });
-      
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || `HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      answer = data.text;
-    } else {
-      // Direct client-side SDK call
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({
+    // Send request to serverless backend (/api/chat)
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: promptContent,
         model: selectedModel,
-        systemInstruction: SYSTEM_PROMPT,
-      });
-
-      const result = await model.generateContent(promptContent);
-      const response = await result.response;
-      answer = response.text();
+        systemInstruction: SYSTEM_PROMPT
+      })
+    });
+    
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || `HTTP ${response.status}`);
     }
+    
+    const data = await response.json();
+    answer = data.text;
 
     // Remove typing indicator and append answer
     typingIndicator.remove();
@@ -370,8 +354,8 @@ async function handleQuerySubmit(e) {
     console.error('Gemini API Error:', error);
     typingIndicator.remove();
     appendSystemMessage(
-      'API Request Failed',
-      `Error calling Gemini API: ${error.message || 'Unknown network error'}. Please verify your API Key and network connection in Settings.`,
+      'Request Failed',
+      `Error generating response: ${error.message || 'Unknown network error'}. Please check your network connection or verify that the server API Key is set.`,
       'danger'
     );
   }
