@@ -131,9 +131,9 @@ async function main() {
     process.exit(1);
   }
   
-  const childrenPath = path.join(__dirname, 'children.json');
+  const childrenPath = path.join(__dirname, 'public', 'children.json');
   const systemPromptPath = path.join(__dirname, 'wfa_agent_system_prompt.md');
-  const equivPath = path.join(__dirname, 'wfa_equivalencies.json');
+  const equivPath = path.join(__dirname, 'public', 'wfa_equivalencies.json');
   
   if (!fs.existsSync(childrenPath) || !fs.existsSync(systemPromptPath)) {
     console.error("Error: database files (children.json or wfa_agent_system_prompt.md) missing.");

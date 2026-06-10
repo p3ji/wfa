@@ -449,13 +449,13 @@ def main():
         print(f"Finished parsing {doc['name']}. Current totals: {parent_counter} parents, {child_counter} children.")
         
     # Write back the results
-    parents_file = os.path.join(base_dir, 'parents.json')
+    parents_file = os.path.join(base_dir, 'public', 'parents.json')
     with open(parents_file, 'w', encoding='utf-8') as f:
-        json.dump(all_parents, f, indent=2, ensure_ascii=False)
+      json.dump(all_parents, f, indent=2, ensure_ascii=False)
         
-    children_file = os.path.join(base_dir, 'children.json')
+    children_file = os.path.join(base_dir, 'public', 'children.json')
     with open(children_file, 'w', encoding='utf-8') as f:
-        json.dump(all_children, f, indent=2, ensure_ascii=False)
+      json.dump(all_children, f, indent=2, ensure_ascii=False)
         
     print(f"\nConsolidation completed successfully!")
     print(f"Saved total {len(all_parents)} parent chunks to: {parents_file}")
