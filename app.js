@@ -29,6 +29,7 @@ Core Directives:
 
 // State Variables
 let chunks = [];
+let wfaEquivalencies = {};
 let apiKey = localStorage.getItem('GEMINI_API_KEY') || '';
 let selectedModel = localStorage.getItem('GEMINI_MODEL') || 'gemini-2.5-flash';
 
@@ -62,7 +63,7 @@ async function init() {
   }
   modelSelect.value = selectedModel;
 
-  // Load database
+  // Load databases
   try {
     const response = await fetch('./children.json');
     chunks = await response.json();
@@ -70,6 +71,14 @@ async function init() {
   } catch (error) {
     console.error('Failed to load children.json database:', error);
     appendSystemMessage('System Error', 'Failed to load policy knowledge base. Please check if children.json exists in the project folder.', 'danger');
+  }
+
+  try {
+    const equivResponse = await fetch('./wfa_equivalencies.json');
+    wfaEquivalencies = await equivResponse.json();
+    console.log('Loaded WFA equivalencies database:', Object.keys(wfaEquivalencies).length, 'classifications');
+  } catch (error) {
+    console.error('Failed to load wfa_equivalencies.json database:', error);
   }
 
   // Setup Event Listeners
@@ -165,6 +174,25 @@ function tokenize(text) {
     .filter(word => word.length > 1 && !STOP_WORDS.has(word));
 }
 
+// Look up a classification code in the user query
+function findClassificationInQuery(query) {
+  if (!wfaEquivalencies || Object.keys(wfaEquivalencies).length === 0) return null;
+  const normalizedQuery = query.toUpperCase();
+  for (const key of Object.keys(wfaEquivalencies)) {
+    const escapedKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp('\\b' + escapedKey + '\\b', 'i');
+    if (regex.test(normalizedQuery)) {
+      return key;
+    }
+    const noHyphenKey = key.replace('-', '');
+    const noHyphenRegex = new RegExp('\\b' + noHyphenKey + '\\b', 'i');
+    if (noHyphenRegex.test(normalizedQuery)) {
+      return key;
+    }
+  }
+  return null;
+}
+
 // RAG Retrieval Engine
 function retrieveChunks(query, topK = 5) {
   const queryTerms = tokenize(query);
@@ -216,8 +244,41 @@ function retrieveChunks(query, topK = 5) {
 }
 
 // Update Search Context Drawer
-function updateContextDrawer(scoredChunks) {
-  if (scoredChunks.length === 0) {
+function updateContextDrawer(scoredChunks, equivalencyInfo = null) {
+  let cardsHtml = '';
+  
+  if (equivalencyInfo) {
+    const totalCount = equivalencyInfo.equivalents.length;
+    const top5 = equivalencyInfo.equivalents.slice(0, 5);
+    const top5Html = top5.map(eq => `
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.85rem;">
+        <span><strong>${eq.classification}</strong> (${eq.group})</span>
+        <span>${eq.is_hourly ? '$' + eq.max_salary + '/hr' : '$' + eq.max_salary.toLocaleString()} (${eq.diff_percent >= 0 ? '+' : ''}${eq.diff_percent}%)</span>
+      </div>
+    `).join('');
+    
+    cardsHtml += `
+      <div class="context-card" style="border-left: 3px solid var(--primary);">
+        <div class="context-card-header">
+          <span>Database Lookup</span>
+          <span class="context-score" style="background: var(--primary); color: #000; font-weight: bold; border: none;">Direct Match</span>
+        </div>
+        <div class="context-title">
+          WFA Equivalency: ${equivalencyInfo.classification}<br>
+          <small>Max salary: ${equivalencyInfo.is_hourly ? '$' + equivalencyInfo.max_salary + '/hr' : '$' + equivalencyInfo.max_salary.toLocaleString()}</small>
+        </div>
+        <div class="context-content" style="font-family: inherit;">
+          <div style="margin-bottom: 8px; font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+            Top 5 of ${totalCount} Equivalent Classifications (within 6%):
+          </div>
+          ${top5Html}
+          ${totalCount > 5 ? `<div style="text-align: center; margin-top: 6px; font-size: 0.8rem; opacity: 0.7;">+ ${totalCount - 5} more equivalent classifications</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  if (scoredChunks.length === 0 && !equivalencyInfo) {
     contextContent.innerHTML = `
       <div class="empty-state">
         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -227,7 +288,7 @@ function updateContextDrawer(scoredChunks) {
     return;
   }
 
-  contextContent.innerHTML = scoredChunks.map(sc => `
+  cardsHtml += scoredChunks.map(sc => `
     <div class="context-card">
       <div class="context-card-header">
         <span>Chunk ID: ${sc.chunk.id}</span>
@@ -242,6 +303,8 @@ function updateContextDrawer(scoredChunks) {
       </div>
     </div>
   `).join('');
+  
+  contextContent.innerHTML = cardsHtml;
 }
 
 // Send user query and fetch response from Gemini
@@ -260,13 +323,37 @@ async function handleQuerySubmit(e) {
   // Show Typing Indicator
   const typingIndicator = appendTypingIndicator();
 
+  // WFA Equivalency lookup check
+  const isEquivalencyQuery = /equiv|alternate|alternation|at-level|deploy/i.test(query);
+  const matchedClass = findClassificationInQuery(query);
+  let equivalencyInfo = null;
+  let equivalencyContext = "";
+  
+  if (isEquivalencyQuery && matchedClass && wfaEquivalencies[matchedClass]) {
+    equivalencyInfo = wfaEquivalencies[matchedClass];
+    equivalencyContext = `[Source: Treasury Board Secretariat Pay Rates Database, WFA Equivalency Calculator]\n`;
+    equivalencyContext += `The official equivalent classifications for WFA alternation/at-level deployment for ${matchedClass} (Pay Group: ${equivalencyInfo.group}, Maximum Salary: ${equivalencyInfo.is_hourly ? '$' + equivalencyInfo.max_salary + '/hr' : '$' + equivalencyInfo.max_salary.toLocaleString()}) are:\n`;
+    
+    equivalencyInfo.equivalents.forEach(eq => {
+      equivalencyContext += `- ${eq.classification} (Group: ${eq.group}, Max Salary: ${eq.is_hourly ? '$' + eq.max_salary + '/hr' : '$' + eq.max_salary.toLocaleString()}, Difference: ${eq.diff_percent >= 0 ? '+' : ''}${eq.diff_percent}%)\n`;
+    });
+    
+    equivalencyContext += `\nINSTRUCTIONS FOR AGENT: Use this database data to list equivalents or deployment options for ${matchedClass}. Explain that equivalents are based on maximum rates of pay within 6%. State that there are ${equivalencyInfo.equivalents.length} equivalents in total. Cite this data as coming from the Treasury Board Rates of Pay database.\n\n`;
+    
+    // Slide open the context drawer
+    contextDrawer.classList.remove('collapsed');
+  }
+
   // 1. Retrieve RAG Chunks
   const scoredRetrieved = retrieveChunks(query, 5);
-  updateContextDrawer(scoredRetrieved);
+  updateContextDrawer(scoredRetrieved, equivalencyInfo);
   const retrievedChunks = scoredRetrieved.map(sc => sc.chunk);
 
   // 2. Format context for prompt
   let formattedContext = "CONTEXT:\n\n";
+  if (equivalencyContext) {
+    formattedContext += equivalencyContext;
+  }
   retrievedChunks.forEach((chunk, index) => {
     formattedContext += `[Chunk #${index + 1} - Document: ${chunk.metadata.document}, Section: ${chunk.metadata.section}, Subsection: ${chunk.metadata.subsection || 'None'}, Source URL: ${chunk.metadata.url}]\n`;
     formattedContext += `"${chunk.content}"\n\n`;
