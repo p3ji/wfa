@@ -142,7 +142,8 @@ function populateSourceDocuments() {
     { name: "WFA Policy Info (TBS)", url: "https://www.canada.ca/en/government/publicservice/workforce/workforce-adjustment.html", type: "Policy" },
     { name: "PSC Retention/Layoff Guide", url: "https://www.canada.ca/en/public-service-commission/services/public-service-hiring-guides/selection-employees-retention-layoff-guide-managers-hr.html", type: "Guide" },
     { name: "CAPE Member Guide 2025", url: "https://www.acep-cape.ca/sites/default/files/2025-12/WFA2025MemberGuideEN20250530.pdf", type: "Union" },
-    { name: "PSAC Member Guide 2025", url: "https://psacunion.ca/sites/psac/files/2025-psac-wfa-members-guide.pdf", type: "Union" }
+    { name: "PSAC Member Guide 2025", url: "https://psacunion.ca/sites/psac/files/2025-psac-wfa-members-guide.pdf", type: "Union" },
+    { name: "Directive on Leave", url: "https://www.tbs-sct.canada.ca/pol/doc-eng.aspx?id=15774", type: "Policy" }
   ];
 
   docListEl.innerHTML = documents.map(doc => `

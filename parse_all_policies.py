@@ -431,6 +431,12 @@ def main():
             "file": "ec_collective_agreement.pdf",
             "name": "Economics and Social Science Services (EC) Collective Agreement",
             "url": "https://www.canada.ca/en/treasury-board-secretariat/topics/pay/collective-agreements/ec.html"
+        },
+        {
+            "type": "html",
+            "file": "directive_on_leave.html",
+            "name": "Directive on Leave and Special Working Arrangements",
+            "url": "https://www.tbs-sct.canada.ca/pol/doc-eng.aspx?id=15774"
         }
     ]
     
