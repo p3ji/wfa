@@ -425,6 +425,12 @@ def main():
             "file": "psac_wfa_guide_2025.pdf",
             "name": "PSAC WFA Member Guide 2025",
             "url": "https://psacunion.ca/sites/psac/files/2025-psac-wfa-members-guide.pdf"
+        },
+        {
+            "type": "pdf",
+            "file": "ec_collective_agreement.pdf",
+            "name": "Economics and Social Science Services (EC) Collective Agreement",
+            "url": "https://www.canada.ca/en/treasury-board-secretariat/topics/pay/collective-agreements/ec.html"
         }
     ]
     

@@ -47,6 +47,9 @@ const selectedModel = 'gemini-2.5-flash';
 
 // DOM Elements
 const docListEl = document.getElementById('docList');
+const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+const btnCloseSidebar = document.getElementById('btnCloseSidebar');
+const sidebar = document.getElementById('sidebar');
 const btnToggleContext = document.getElementById('btnToggleContext');
 const btnCloseDrawer = document.getElementById('btnCloseDrawer');
 const contextDrawer = document.getElementById('contextDrawer');
@@ -80,8 +83,27 @@ async function init() {
   }
 
   // Setup Event Listeners
-  btnToggleContext.addEventListener('click', () => contextDrawer.classList.toggle('collapsed'));
-  btnCloseDrawer.addEventListener('click', () => contextDrawer.classList.add('collapsed'));
+  btnToggleContext.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      contextDrawer.classList.toggle('open');
+    } else {
+      contextDrawer.classList.toggle('collapsed');
+    }
+  });
+  btnCloseDrawer.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      contextDrawer.classList.remove('open');
+    } else {
+      contextDrawer.classList.add('collapsed');
+    }
+  });
+  
+  btnToggleSidebar.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+  });
+  btnCloseSidebar.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+  });
   
   inputForm.addEventListener('submit', handleQuerySubmit);
   queryInput.addEventListener('input', autoResizeTextArea);
@@ -360,7 +382,7 @@ async function handleQuerySubmit(e) {
     }
     
     const data = await response.json();
-    answer = data.text;
+    const answer = data.text;
 
     // Remove typing indicator and append answer
     typingIndicator.remove();

@@ -830,3 +830,61 @@ a:hover {
   margin-top: 8px;
   margin-bottom: 8px;
 }
+
+/* Mobile Responsive Design */
+.hide-desktop {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  
+  .hide-desktop {
+    display: inline-flex !important;
+  }
+  
+  .sidebar, .context-drawer {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    height: 80vh;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    background-color: var(--bg-secondary);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  }
+  
+  .sidebar.open, .context-drawer.open {
+    transform: translateY(0);
+    visibility: visible;
+  }
+  
+  .sidebar-header, .drawer-header {
+    border-radius: 24px 24px 0 0;
+    background-color: var(--bg-card);
+  }
+  
+  .chat-workspace {
+    width: 100vw;
+  }
+  
+  .chat-feed {
+    padding: 16px;
+  }
+  
+  .chat-header {
+    padding: 16px;
+  }
+  
+  .message-bubble {
+    max-width: 90%;
+  }
+}

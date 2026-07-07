@@ -17,7 +17,7 @@
   <div class="app-container">
     
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo">
           <i class="fa-solid fa-scale-balanced"></i>
@@ -26,6 +26,7 @@
           <h2>WFA Agent</h2>
           <span class="status-badge"><span class="pulse-dot"></span>Active</span>
         </div>
+        <button class="btn-close hide-desktop" id="btnCloseSidebar" style="margin-left: auto;">&times;</button>
       </div>
       
       <div class="sidebar-content">
@@ -51,8 +52,11 @@
           <p>Canadian Federal Public Service Work Force Adjustment Advisor</p>
         </div>
         <div class="header-actions">
+          <button class="btn btn-icon-label hide-desktop" id="btnToggleSidebar" title="View Knowledge Base">
+            <i class="fa-solid fa-book"></i> <span class="hide-mobile">Policies</span>
+          </button>
           <button class="btn btn-icon-label" id="btnToggleContext" title="View Search Context">
-            <i class="fa-solid fa-database"></i> <span>Search Context</span>
+            <i class="fa-solid fa-database"></i> <span class="hide-mobile">Search Context</span>
           </button>
         </div>
       </header>
