@@ -1,14 +1,17 @@
-// Submit a suggested question programmatically
+// Populate the prompt box with a suggested question
 function submitQuestion(questionText) {
   const queryInput = document.getElementById('queryInput');
   if (queryInput) {
     queryInput.value = questionText.trim();
     queryInput.style.height = 'auto';
     queryInput.style.height = (queryInput.scrollHeight) + 'px';
-  }
-  const inputForm = document.getElementById('inputForm');
-  if (inputForm) {
-    inputForm.requestSubmit();
+    queryInput.focus();
+    
+    // Smoothly scroll down to the input area so the user knows it was populated
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: 'smooth'
+    });
   }
 }
 
@@ -38,7 +41,7 @@ Core Directives:
 3. Mandatory Citations: Every factual claim or quote you write MUST be followed by a citation containing the source document URL. Format: ([Source Name]([URL])).
 4. No Personal Speculation: Explain general rules, never make guarantees.
 5. Style and Tone: Objective, formal, neutral. Use lists to break down complex text.
-6. Suggested Questions: Whenever you end a response (even a successful one), you may optionally include a "You might also want to know:" section with 2-3 follow-up questions phrased as complete questions ending with "?".`;
+6. Suggested Questions: Whenever you end a response (even a successful one), you may optionally include a "You might also want to know:" section with 2-3 follow-up questions formatted as a bulleted list. Each bullet must be a complete question ending with "?".`;
 
 // State Variables
 let chunks = [];
