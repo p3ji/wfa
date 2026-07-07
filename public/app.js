@@ -167,8 +167,24 @@ function autoResizeTextArea() {
 // RAG Search Tokenizer
 function tokenize(text) {
   if (!text) return [];
-  return text
-    .toLowerCase()
+  let normalized = text.toLowerCase();
+  
+  // Expand common acronyms for better search retrieval
+  const acronyms = {
+    'lwop': 'leave without pay',
+    'wfa': 'work force adjustment',
+    'wfaa': 'work force adjustment appendix',
+    'wfad': 'work force adjustment directive',
+    'tsm': 'transition support measure',
+    'cpa': 'core public administration',
+    'serlo': 'selection of employees for retention or lay-off'
+  };
+  
+  for (const [acronym, expansion] of Object.entries(acronyms)) {
+    normalized = normalized.replace(new RegExp('\\b' + acronym + '\\b', 'g'), expansion);
+  }
+  
+  return normalized
     .replace(/[^\w\s-]/g, ' ')
     .split(/[\s_]+/)
     .filter(word => word.length > 1 && !STOP_WORDS.has(word));
