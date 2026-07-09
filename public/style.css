@@ -204,6 +204,55 @@ a:hover {
   color: var(--primary-hover);
 }
 
+.resource-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resource-item {
+  padding: 12px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: var(--transition);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.resource-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.resource-item i {
+  font-size: 16px;
+  color: var(--primary);
+  transition: var(--transition);
+  width: 20px;
+  text-align: center;
+}
+
+.resource-item:hover i {
+  color: var(--primary-hover);
+}
+
+.resource-item span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: var(--transition);
+}
+
+.resource-item:hover span {
+  color: var(--primary-hover);
+}
+
 .info-card {
   background: linear-gradient(135deg, var(--bg-card), var(--bg-primary));
   border: 1px solid var(--border);
