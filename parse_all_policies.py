@@ -437,6 +437,12 @@ def main():
             "file": "directive_on_leave.html",
             "name": "Directive on Leave and Special Working Arrangements",
             "url": "https://www.tbs-sct.canada.ca/pol/doc-eng.aspx?id=15774"
+        },
+        {
+            "type": "pdf",
+            "file": "NJC Relocation Directive.pdf",
+            "name": "NJC Relocation Directive",
+            "url": "https://www.njc-cnm.gc.ca/directive/nrd-drc/index-eng.php"
         }
     ]
     
