@@ -15,22 +15,7 @@ function submitQuestion(questionText) {
   }
 }
 
-// Stop words for search tokenization
-const STOP_WORDS = new Set([
-  'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'arent', 'as', 'at',
-  'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', 'cant', 'cannot', 'could',
-  'couldnt', 'did', 'didnt', 'do', 'does', 'doesnt', 'doing', 'dont', 'down', 'during', 'each', 'few', 'for', 'from',
-  'further', 'had', 'hadnt', 'has', 'hasnt', 'have', 'havent', 'having', 'he', 'hed', 'hell', 'hes', 'her', 'here',
-  'heres', 'heres', 'herself', 'him', 'himself', 'his', 'how', 'hows', 'i', 'id', 'ill', 'im', 'ive', 'if', 'in',
-  'into', 'is', 'isnt', 'it', 'its', 'itself', 'lets', 'me', 'more', 'most', 'mustnt', 'my', 'myself', 'no', 'nor',
-  'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own',
-  'same', 'shant', 'she', 'shed', 'shell', 'shes', 'should', 'shouldnt', 'so', 'some', 'such', 'than', 'that', 'thats',
-  'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'theres', 'these', 'they', 'theyd', 'theyll',
-  'theyre', 'theyve', 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasnt', 'we',
-  'wed', 'well', 'were', 'weve', 'werent', 'what', 'whats', 'when', 'whens', 'where', 'wheres', 'which', 'while',
-  'who', 'whos', 'whom', 'why', 'whys', 'with', 'wont', 'would', 'wouldnt', 'you', 'youd', 'youll', 'youre', 'youve',
-  'your', 'yours', 'yourself', 'yourselves'
-]);
+// (Keyword search removed — retrieval is now handled server-side via semantic embeddings)
 
 // WFA agent system prompt
 const SYSTEM_PROMPT = `You are a strict, authoritative assistant specializing in the Work Force Adjustment (WFA) process for the Canadian Federal Public Service. Your sole purpose is to provide accurate, factual information regarding WFA policies, directives, and official clarifications based only on the provided sources.
@@ -44,7 +29,6 @@ Core Directives:
 6. Suggested Questions: Whenever you end a response (even a successful one), you may optionally include a "You might also want to know:" section with 2-3 follow-up questions formatted as a bulleted list. Each bullet must be a complete question ending with "?".`;
 
 // State Variables
-let chunks = [];
 let wfaEquivalencies = {};
 const selectedModel = 'gemini-2.5-flash';
 
@@ -67,15 +51,8 @@ async function init() {
   // Enable send button by default (the app will use Vercel Serverless Function /api/chat if no local key is set)
   btnSend.removeAttribute('disabled');
 
-  // Load databases
-  try {
-    const response = await fetch('./children.json');
-    chunks = await response.json();
-    populateSourceDocuments();
-  } catch (error) {
-    console.error('Failed to load children.json database:', error);
-    appendSystemMessage('System Error', 'Failed to load policy knowledge base. Please check if children.json exists in the project folder.', 'danger');
-  }
+  // Populate sidebar source documents list
+  populateSourceDocuments();
 
   try {
     const equivResponse = await fetch('./wfa_equivalencies.json');
@@ -170,33 +147,7 @@ function autoResizeTextArea() {
   queryInput.style.height = (queryInput.scrollHeight) + 'px';
 }
 
-// RAG Search Tokenizer
-function tokenize(text) {
-  if (!text) return [];
-  let normalized = text.toLowerCase();
-  
-  // Expand common acronyms for better search retrieval
-  const acronyms = {
-    'lwop': 'leave without pay',
-    'wfa': 'work force adjustment',
-    'wfaa': 'work force adjustment appendix',
-    'wfad': 'work force adjustment directive',
-    'tsm': 'transition support measure',
-    'cpa': 'core public administration',
-    'serlo': 'selection of employees for retention or lay-off'
-  };
-  
-  for (const [acronym, expansion] of Object.entries(acronyms)) {
-    normalized = normalized.replace(new RegExp('\\b' + acronym + '\\b', 'g'), expansion);
-  }
-  
-  return normalized
-    .replace(/[^\w\s-]/g, ' ')
-    .split(/[\s_]+/)
-    .filter(word => word.length > 1 && !STOP_WORDS.has(word));
-}
-
-// Look up a classification code in the user query
+// Look up a classification code in the user query (still client-side — exact key lookup)
 function findClassificationInQuery(query) {
   if (!wfaEquivalencies || Object.keys(wfaEquivalencies).length === 0) return null;
   const normalizedQuery = query.toUpperCase();
@@ -215,58 +166,8 @@ function findClassificationInQuery(query) {
   return null;
 }
 
-// RAG Retrieval Engine
-function retrieveChunks(query, topK = 5) {
-  const queryTerms = tokenize(query);
-  if (queryTerms.length === 0 || chunks.length === 0) {
-    return chunks.slice(0, topK);
-  }
-
-  const scoredChunks = chunks.map(chunk => {
-    let score = 0;
-    const content = chunk.content || '';
-    const section = (chunk.metadata && chunk.metadata.section) || '';
-    const subsection = (chunk.metadata && chunk.metadata.subsection) || '';
-    
-    const contentLower = content.toLowerCase();
-    const sectionLower = section.toLowerCase();
-    const subsectionLower = subsection.toLowerCase();
-    
-    // Check term matches
-    queryTerms.forEach(term => {
-      const regex = new RegExp('\\b' + term + '\\b', 'g');
-      const matches = contentLower.match(regex);
-      if (matches) {
-        score += matches.length * 1.0;
-      }
-      if (sectionLower.includes(term)) score += 3.0;
-      if (subsectionLower.includes(term)) score += 4.0;
-    });
-    
-    // Multi-term phrase matches
-    for (let i = 0; i < queryTerms.length - 1; i++) {
-      const phrase = `${queryTerms[i]} ${queryTerms[i+1]}`;
-      if (contentLower.includes(phrase)) score += 5.0;
-      if (sectionLower.includes(phrase)) score += 10.0;
-      if (subsectionLower.includes(phrase)) score += 15.0;
-    }
-    
-    return { chunk, score };
-  });
-
-  const sorted = scoredChunks
-    .filter(sc => sc.score > 0)
-    .sort((a, b) => b.score - a.score);
-
-  if (sorted.length === 0) {
-    return chunks.slice(0, topK);
-  }
-
-  return sorted.slice(0, topK);
-}
-
-// Update Search Context Drawer
-function updateContextDrawer(scoredChunks, equivalencyInfo = null) {
+// Update Search Context Drawer (now receives flat chunk objects from server with cosine scores)
+function updateContextDrawer(retrievedChunks, equivalencyInfo = null) {
   let cardsHtml = '';
   
   if (equivalencyInfo) {
@@ -300,121 +201,95 @@ function updateContextDrawer(scoredChunks, equivalencyInfo = null) {
     `;
   }
 
-  if (scoredChunks.length === 0 && !equivalencyInfo) {
+  if ((!retrievedChunks || retrievedChunks.length === 0) && !equivalencyInfo) {
     contextContent.innerHTML = `
       <div class="empty-state">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <p>No keyword matches found. Falling back to default baseline chunks.</p>
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <p>Ask a question to see the sources used to generate the answer.</p>
       </div>
     `;
     return;
   }
 
-  cardsHtml += scoredChunks.map(sc => `
-    <div class="context-card">
-      <div class="context-card-header">
-        <span>Chunk ID: ${sc.chunk.id}</span>
-        <span class="context-score">Score: ${sc.score.toFixed(1)}</span>
+  if (retrievedChunks && retrievedChunks.length > 0) {
+    cardsHtml += retrievedChunks.map(rc => `
+      <div class="context-card">
+        <div class="context-card-header">
+          <span>${rc.document || 'Source'}</span>
+          <span class="context-score">Similarity: ${Math.round(rc.score * 100)}%</span>
+        </div>
+        <div class="context-title">
+          <small>${rc.section || ''} &rarr; ${rc.subsection || 'General'}</small>
+        </div>
+        <div class="context-content">
+          &ldquo;${rc.content}&rdquo;
+        </div>
       </div>
-      <div class="context-title">
-        ${sc.chunk.metadata.document}<br>
-        <small>${sc.chunk.metadata.section} &rarr; ${sc.chunk.metadata.subsection || 'General'}</small>
-      </div>
-      <div class="context-content">
-        "${sc.chunk.content}"
-      </div>
-    </div>
-  `).join('');
+    `).join('');
+  }
   
   contextContent.innerHTML = cardsHtml;
 }
 
-// Send user query and fetch response from Gemini
+// Send user query — retrieval is now handled server-side via semantic embeddings
 async function handleQuerySubmit(e) {
   e.preventDefault();
   const query = queryInput.value.trim();
   if (!query) return;
 
-  // Clear query and reset textarea size
   queryInput.value = '';
   queryInput.style.height = 'auto';
 
-  // Add User Message
   appendMessage('user', query);
-
-  // Show Typing Indicator
   const typingIndicator = appendTypingIndicator();
 
-  // WFA Equivalency lookup check
+  // WFA Equivalency lookup (client-side exact key match — fast & accurate)
   const isEquivalencyQuery = /equiv|alternate|alternation|at-level|deploy/i.test(query);
   const matchedClass = findClassificationInQuery(query);
   let equivalencyInfo = null;
-  let equivalencyContext = "";
-  
+  let equivalencyContext = '';
+
   if (isEquivalencyQuery && matchedClass && wfaEquivalencies[matchedClass]) {
     equivalencyInfo = wfaEquivalencies[matchedClass];
     equivalencyContext = `[Source: Treasury Board Secretariat Pay Rates Database, WFA Equivalency Calculator]\n`;
     equivalencyContext += `The official equivalent classifications for WFA alternation/at-level deployment for ${matchedClass} (Pay Group: ${equivalencyInfo.group}, Maximum Salary: ${equivalencyInfo.is_hourly ? '$' + equivalencyInfo.max_salary + '/hr' : '$' + equivalencyInfo.max_salary.toLocaleString()}) are:\n`;
-    
     equivalencyInfo.equivalents.forEach(eq => {
       equivalencyContext += `- ${eq.classification} (Group: ${eq.group}, Max Salary: ${eq.is_hourly ? '$' + eq.max_salary + '/hr' : '$' + eq.max_salary.toLocaleString()}, Difference: ${eq.diff_percent >= 0 ? '+' : ''}${eq.diff_percent}%)\n`;
     });
-    
     equivalencyContext += `\nINSTRUCTIONS FOR AGENT: Use this database data to list equivalents or deployment options for ${matchedClass}. Explain that equivalents are based on maximum rates of pay within 6%. State that there are ${equivalencyInfo.equivalents.length} equivalents in total. Cite this data as coming from the Treasury Board Rates of Pay database.\n\n`;
-    
-    // Slide open the context drawer
     contextDrawer.classList.remove('collapsed');
   }
 
-  // 1. Retrieve RAG Chunks
-  const scoredRetrieved = retrieveChunks(query, 5);
-  updateContextDrawer(scoredRetrieved, equivalencyInfo);
-  const retrievedChunks = scoredRetrieved.map(sc => sc.chunk);
-
-  // 2. Format context for prompt
-  let formattedContext = "CONTEXT:\n\n";
-  if (equivalencyContext) {
-    formattedContext += equivalencyContext;
-  }
-  retrievedChunks.forEach((chunk, index) => {
-    formattedContext += `[Chunk #${index + 1} - Document: ${chunk.metadata.document}, Section: ${chunk.metadata.section}, Subsection: ${chunk.metadata.subsection || 'None'}, Source URL: ${chunk.metadata.url}]\n`;
-    formattedContext += `"${chunk.content}"\n\n`;
-  });
-
-  const promptContent = `${formattedContext}QUESTION:\n${query}`;
-
-  // 3. Call Gemini API
   try {
-    // Send request to serverless backend (/api/chat)
     const response = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: promptContent,
+        query,
+        equivalencyContext,
         model: selectedModel,
         systemInstruction: SYSTEM_PROMPT
       })
     });
-    
+
     if (!response.ok) {
       const errData = await response.json();
       throw new Error(errData.error || `HTTP ${response.status}`);
     }
-    
-    const data = await response.json();
-    const answer = data.text;
 
-    // Remove typing indicator and append answer
+    const data = await response.json();
+
+    // Update context drawer with semantic search results returned from server
+    updateContextDrawer(data.retrievedChunks || [], equivalencyInfo);
+
     typingIndicator.remove();
-    appendMessage('assistant', answer);
+    appendMessage('assistant', data.text);
   } catch (error) {
-    console.error('Gemini API Error:', error);
+    console.error('API Error:', error);
     typingIndicator.remove();
     appendSystemMessage(
       'Request Failed',
-      `Error generating response: ${error.message || 'Unknown network error'}. Please check your network connection or verify that the server API Key is set.`,
+      `Error generating response: ${error.message || 'Unknown network error'}. Please check your network connection or verify that the server API key is set.`,
       'danger'
     );
   }

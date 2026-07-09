@@ -45,27 +45,23 @@ const server = http.createServer((req, res) => {
     });
     req.on('end', async () => {
       try {
-        const { prompt, model, systemInstruction } = JSON.parse(body);
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ error: 'GEMINI_API_KEY environment variable is not set locally in .env' }));
-        }
+        const chatModule = await import('./api/chat.js');
+        const chatHandler = chatModule.default;
 
-        // Dynamically import @google/generative-ai (as it's in package.json)
-        const { GoogleGenerativeAI } = await import('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const genModel = genAI.getGenerativeModel({
-          model: model || 'gemini-2.5-flash',
-          systemInstruction: systemInstruction,
-        });
+        // Attach Vercel-like body and helper methods
+        req.body = JSON.parse(body);
+        
+        res.status = (code) => {
+          res.statusCode = code;
+          return res;
+        };
+        res.json = (data) => {
+          res.writeHead(res.statusCode || 200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(data));
+          return res;
+        };
 
-        const result = await genModel.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ text }));
+        await chatHandler(req, res);
       } catch (err) {
         console.error('Local API Error:', err);
         res.writeHead(500, { 'Content-Type': 'application/json' });
