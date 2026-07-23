@@ -2,7 +2,7 @@
 
 > Single source of truth for *how to work on this repo*. Claude and Antigravity both read this (`CLAUDE.md` → `@AGENTS.md`; `GEMINI.md` → pointer). Keep it short. *(Auto-generated 2026-06-22; edit freely — re-runs won't overwrite an existing AGENTS.md.)*
 
-**Brain note (goals, backlog, full context):** `H:\My Drive\Brain2\Projects\wfa.md`
+**Brain note (goals, backlog, full context):** [wfa.md](file:///H:/My%20Drive/Brain2_backup/Projects/wfa.md)
 **GitHub:** https://github.com/p3ji/wfa.git
 **Stack (detected):** Node.js / JavaScript
 
